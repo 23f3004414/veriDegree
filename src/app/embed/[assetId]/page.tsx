@@ -5,20 +5,21 @@ import { ShieldCheck, XCircle, Loader2 } from 'lucide-react';
 import { useParams } from 'next/navigation';
 
 export default function EmbedBadgePage() {
-    const { assetId } = useParams();
-    const [status, setStatus] = useState('loading'); // loading, valid, invalid
+    const params = useParams();
+    const assetId = params?.assetId as string | undefined;
+    const [status, setStatus] = useState<'loading' | 'valid' | 'invalid'>('loading');
 
     useEffect(() => {
         if (!assetId) return;
 
         async function checkAsset() {
             try {
-                const response = await indexerClient.lookupAssetBalances(assetId).do();
+                const response = await indexerClient.lookupAssetBalances(Number(assetId)).do();
                 // If anyone holds the asset (amount > 0)
                 // In SBT logic, the creator might hold it initially, 
                 // but usually the student opts-in and creator transfers it.
                 // We assume if it's held by anyone it's valid for this widget's demo purposes.
-                const holder = response.balances.find(b => BigInt(b.amount) > 0n);
+                const holder = response.balances.find((b: any) => BigInt(b.amount) > 0n);
                 
                 if (holder) {
                     setStatus('valid');

@@ -1,11 +1,11 @@
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import algosdk from "algosdk";
 
 const UNIVERSITY_DOMAINS = [".edu", ".ac.in"];
 const UNIVERSITY_WHITELIST = ["admin@university.edu"];
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
             id: "university_credentials",
@@ -40,7 +40,7 @@ export const authOptions = {
                     email: email,
                     name: "University Administrator",
                     role: "UNIVERSITY",
-                };
+                } as any;
             }
         }),
         CredentialsProvider({
@@ -75,7 +75,7 @@ export const authOptions = {
                             name: `Student (${address.slice(0, 6)}...)`,
                             role: "STUDENT",
                             address: address
-                        };
+                        } as any;
                     }
                 } catch (error) {
                     console.error("SIWA Verification Error:", error);
@@ -87,15 +87,15 @@ export const authOptions = {
     callbacks: {
         async jwt({ token, user }) {
             if (user) {
-                token.role = user.role;
-                token.address = user.address;
+                token.role = (user as any).role;
+                token.address = (user as any).address;
             }
             return token;
         },
         async session({ session, token }) {
             if (session.user) {
-                session.user.role = token.role;
-                session.user.address = token.address;
+                (session.user as any).role = token.role;
+                (session.user as any).address = token.address;
             }
             return session;
         }

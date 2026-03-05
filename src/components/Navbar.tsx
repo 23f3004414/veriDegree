@@ -9,7 +9,6 @@ import {
     GraduationCap, 
     Github, 
     LogOut, 
-    User, 
     Wallet, 
     LayoutDashboard, 
     FilePlus, 
@@ -23,8 +22,8 @@ import toast from 'react-hot-toast';
 export default function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
-    const { data: session, status } = useSession();
-    const { disconnect } = useWallet();
+    const { data: session } = useSession();
+    const { disconnect } = useWallet() as any;
     const [isScrolled, setIsScrolled] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -38,14 +37,14 @@ export default function Navbar() {
 
     const handleSignOut = async () => {
         await signOut({ redirect: false });
-        if (session?.user?.role === "STUDENT") {
+        if ((session?.user as any)?.role === "STUDENT") {
             disconnect();
         }
         toast.success("Signed out successfully");
         router.push("/");
     };
 
-    const isActive = (path) => pathname === path;
+    const isActive = (path: string) => pathname === path;
 
     // Close mobile menu on route change
     useEffect(() => {
@@ -72,7 +71,7 @@ export default function Navbar() {
                         <Search size={14} /> Verify
                     </Link>
 
-                    {session?.user?.role === "UNIVERSITY" && (
+                    {(session?.user as any)?.role === "UNIVERSITY" && (
                         <Link 
                             href="/issue"
                             className={`text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${isActive('/issue') ? 'text-gold' : 'text-gray-400 hover:text-white'}`}
@@ -81,7 +80,7 @@ export default function Navbar() {
                         </Link>
                     )}
 
-                    {session?.user?.role === "STUDENT" && (
+                    {(session?.user as any)?.role === "STUDENT" && (
                         <Link 
                             href="/dashboard"
                             className={`text-xs font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${isActive('/dashboard') ? 'text-gold' : 'text-gray-400 hover:text-white'}`}
@@ -102,9 +101,9 @@ export default function Navbar() {
                                 className="flex items-center gap-4"
                             >
                                 <div className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-2xl ring-1 ring-white/5">
-                                    <div className={`w-2 h-2 rounded-full animate-pulse ${session.user.role === "UNIVERSITY" ? 'bg-blue-400' : 'bg-gold'}`} />
+                                    <div className={`w-2 h-2 rounded-full animate-pulse ${(session.user as any)?.role === "UNIVERSITY" ? 'bg-blue-400' : 'bg-gold'}`} />
                                     <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest max-w-[100px] truncate">
-                                        {session.user.role === "UNIVERSITY" ? "Institution" : (session.user.address?.slice(0, 4) + "..." + session.user.address?.slice(-4))}
+                                        {(session.user as any)?.role === "UNIVERSITY" ? "Institution" : ((session.user as any)?.address?.slice(0, 4) + "..." + (session.user as any)?.address?.slice(-4))}
                                     </span>
                                 </div>
 
@@ -137,6 +136,7 @@ export default function Navbar() {
                     <a 
                         href="https://github.com" 
                         target="_blank" 
+                        rel="noreferrer"
                         className="p-2.5 glass text-gray-400 rounded-xl hover:text-gold hover:border-gold/30 transition-all hidden lg:flex"
                     >
                         <Github size={18} />
@@ -171,7 +171,7 @@ export default function Navbar() {
                                 <Search size={16} /> Verify Portal
                             </Link>
 
-                            {session?.user?.role === "UNIVERSITY" && (
+                            {(session?.user as any)?.role === "UNIVERSITY" && (
                                 <Link 
                                     href="/issue"
                                     className={`text-sm font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 ${isActive('/issue') ? 'text-gold bg-gold/5' : 'text-gray-400'}`}
@@ -180,7 +180,7 @@ export default function Navbar() {
                                 </Link>
                             )}
 
-                            {session?.user?.role === "STUDENT" && (
+                            {(session?.user as any)?.role === "STUDENT" && (
                                 <Link 
                                     href="/dashboard"
                                     className={`text-sm font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 ${isActive('/dashboard') ? 'text-gold bg-gold/5' : 'text-gray-400'}`}
@@ -195,9 +195,9 @@ export default function Navbar() {
                             {session ? (
                                 <div className="flex justify-between items-center">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full animate-pulse ${session.user.role === "UNIVERSITY" ? 'bg-blue-400' : 'bg-gold'}`} />
+                                        <div className={`w-2 h-2 rounded-full animate-pulse ${(session.user as any)?.role === "UNIVERSITY" ? 'bg-blue-400' : 'bg-gold'}`} />
                                         <span className="text-xs font-mono text-gray-400 uppercase tracking-widest">
-                                            {session.user.role === "UNIVERSITY" ? "Institution" : (session.user.address?.slice(0, 4) + "..." + session.user.address?.slice(-4))}
+                                            {(session.user as any)?.role === "UNIVERSITY" ? "Institution" : ((session.user as any)?.address?.slice(0, 4) + "..." + (session.user as any)?.address?.slice(-4))}
                                         </span>
                                     </div>
                                     <button 

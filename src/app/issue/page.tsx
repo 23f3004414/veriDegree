@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useWallet } from '@/lib/WalletContext';
 import { algodClient, mintSBT, cleanAddress, waitForConfirmation, transferAsset } from "@/lib/algorand";
@@ -9,10 +9,30 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
+export interface StudentData {
+    studentName: string;
+    enrollmentId: string;
+    studentAddr: string;
+    degree: string;
+    cgpa: string;
+    gradYear: number;
+}
+
+export interface Credential extends StudentData {
+    issuer: string;
+    type: string;
+    timestamp: string;
+}
+
 export default function IssuePage() {
     const { data: session } = useSession();
-    const { accountAddress, connect, deflyWallet } = useWallet();
-    const [formData, setFormData] = useState({
+    const { accountAddress, connect, deflyWallet } = useWallet() as {
+        accountAddress: string;
+        connect: () => void;
+        deflyWallet: any; // Type according to defly specifications if available
+    };
+
+    const [formData, setFormData] = useState<StudentData>({
         studentName: '',
         enrollmentId: '',
         studentAddr: '',
@@ -20,9 +40,10 @@ export default function IssuePage() {
         cgpa: '',
         gradYear: (new Date()).getFullYear(),
     });
-    const [isIssuing, setIsIssuing] = useState(false);
-    const [mintedAssetId, setMintedAssetId] = useState(null);
-    const [isTransferring, setIsTransferring] = useState(false);
+
+    const [isIssuing, setIsIssuing] = useState<boolean>(false);
+    const [mintedAssetId, setMintedAssetId] = useState<number | bigint | null>(null);
+    const [isTransferring, setIsTransferring] = useState<boolean>(false);
 
     const handleTransfer = async () => {
         if (!mintedAssetId || !formData.studentAddr) return;
@@ -47,27 +68,28 @@ export default function IssuePage() {
             toast.success("Degree Successfully Transferred to Student!", { id: "transfer", duration: 5000 });
             setMintedAssetId(null);
             setFormData({ studentName: '', enrollmentId: '', studentAddr: '', degree: '', cgpa: '', gradYear: 2026 });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Transfer error:", error);
-            toast.error("Transfer failed: " + (error.message || "Ensure student has opted in"), { id: "transfer" });
+            toast.error("Transfer failed: " + (error?.message || "Ensure student has opted in"), { id: "transfer" });
         } finally {
             setIsTransferring(false);
         }
     };
 
-    const handleIssue = async (e) => {
+    const handleIssue = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         console.log("[DEBUG] handleIssue clicked. current accountAddress:", accountAddress);
 
         if (!accountAddress) {
-            return toast.error("Connect your Defly Wallet first!");
+            toast.error("Connect your Defly Wallet first!");
+            return;
         }
         
         setIsIssuing(true);
         try {
             // 1. Upload to IPFS
             toast.loading("Uploading metadata to IPFS...", { id: "issue" });
-            const metadata = {
+            const metadata: Credential = {
                 ...formData,
                 issuer: accountAddress,
                 type: "VeriDegree SBT",
@@ -120,16 +142,17 @@ export default function IssuePage() {
             toast.success(`Minted! Asset ID: ${assetIndex}. Waiting for student opt-in.`, { id: "issue", duration: 8000 });
             setMintedAssetId(assetIndex);
             // Don't clear form data yet, we need it for the transfer step
-        } catch (error) {
+        } catch (error: any) {
             console.error("[CRITICAL] handleIssue error:", error);
-            toast.error("Process Failed: " + (error.message || "Unknown error"), { id: "issue" });
+            toast.error("Process Failed: " + (error?.message || "Unknown error"), { id: "issue" });
         } finally {
             setIsIssuing(false);
         }
     };
 
-    // RBAC Check
-    if (session?.user?.role !== "UNIVERSITY") {
+    // RBAC Check (assuming custom session type with role)
+    const user = session?.user as { role?: string } | undefined;
+    if (user?.role !== "UNIVERSITY") {
         return (
             <div className="min-h-[80vh] flex flex-col items-center justify-center p-8 text-center">
                 <ShieldCheck size={64} className="text-red-500 mb-6 animate-pulse" />
@@ -285,7 +308,7 @@ export default function IssuePage() {
                                             required
                                             type="number"
                                             value={formData.gradYear}
-                                            onChange={e => setFormData({...formData, gradYear: e.target.value})}
+                                            onChange={e => setFormData({...formData, gradYear: Number(e.target.value)})}
                                             className="w-full bg-white/5 border border-white/5 p-4 rounded-2xl focus:border-gold/30 focus:bg-white/10 outline-none transition-all text-white font-medium"
                                         />
                                     </div>

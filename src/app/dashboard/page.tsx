@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, FormEvent } from 'react';
 import { useSession } from 'next-auth/react';
 import { useWallet } from '@/lib/WalletContext';
 import { fetchUserAssets, fetchAssetDetails, optInAsset, cleanAddress, algodClient, waitForConfirmation } from '@/lib/algorand';
-import { ShieldCheck, Loader2, Search, PlusCircle, CheckCircle, Copy, Code, Github, X, QrCode, Download, ExternalLink, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Loader2, Search, PlusCircle, CheckCircle, Copy, Code, Github, X, QrCode, Download, ExternalLink, RefreshCw, Wallet, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
 import Link from 'next/link';
@@ -11,21 +11,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ZKProofModal from '@/components/ZKProofModal';
 import CertificateCard from '@/components/CertificateCard';
 import BlindHireCard from '@/components/BlindHireCard';
-import { Wallet, Info } from 'lucide-react';
+
+interface Asset {
+    id: string;
+    amount: number;
+    name?: string;
+    url?: string;
+    creator?: string;
+}
 
 export default function DashboardPage() {
     const { data: session } = useSession();
-    const { accountAddress, connect, deflyWallet } = useWallet();
-    const [assets, setAssets] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [selectedAsset, setSelectedAsset] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-    const [sharingAsset, setSharingAsset] = useState(null);
+    const { accountAddress, connect, deflyWallet } = useWallet() as any;
+    const [assets, setAssets] = useState<Asset[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+    const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+    const [sharingAsset, setSharingAsset] = useState<Asset | null>(null);
     
     // Opt-in state
-    const [claimAssetId, setClaimAssetId] = useState('');
-    const [isClaiming, setIsClaiming] = useState(false);
+    const [claimAssetId, setClaimAssetId] = useState<string>('');
+    const [isClaiming, setIsClaiming] = useState<boolean>(false);
 
     useEffect(() => {
         if (accountAddress) {
@@ -39,13 +46,13 @@ export default function DashboardPage() {
         setIsLoading(true);
         try {
             const userAssets = await fetchUserAssets(accountAddress);
-            const degreeAssets = [];
+            const degreeAssets: Asset[] = [];
             for (const asset of userAssets) {
                 const details = await fetchAssetDetails(asset.assetId);
                 // Check if the asset has a name and it includes "Degree"
                 if (details && details.params && details.params.name && details.params.name.includes("Degree")) {
                     degreeAssets.push({
-                        id: asset.assetId,
+                        id: asset.assetId.toString(),
                         amount: asset.amount,
                         name: details.params.name,
                         url: details.params.url,
@@ -62,26 +69,28 @@ export default function DashboardPage() {
         }
     };
 
-    const handleOpenProofModal = (asset) => {
+    const handleOpenProofModal = (asset: Asset) => {
         setSelectedAsset(asset);
         setIsModalOpen(true);
     };
 
-    const handleOpenShareBadge = (asset) => {
+    const handleOpenShareBadge = (asset: Asset) => {
         setSharingAsset(asset);
         setIsShareModalOpen(true);
     };
 
-    const copyToClipboard = (text, type) => {
+    const copyToClipboard = (text: string, type: string) => {
         navigator.clipboard.writeText(text);
         toast.success(`${type} snippet copied!`);
     };
 
     const downloadQRCode = () => {
-        const svg = document.getElementById('qr-code-svg');
+        const svg = document.getElementById('qr-code-svg') as (HTMLElement & SVGElement) | null;
+        if (!svg || !sharingAsset) return;
         const svgData = new XMLSerializer().serializeToString(svg);
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
         const img = new Image();
         img.onload = () => {
             canvas.width = img.width + 40;
@@ -99,7 +108,7 @@ export default function DashboardPage() {
         img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
     };
 
-    const handleClaim = async (e) => {
+    const handleClaim = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!claimAssetId) return;
 
@@ -108,7 +117,7 @@ export default function DashboardPage() {
             toast.loading("Initiating Opt-in...", { id: "claim" });
             const sAddr = cleanAddress(accountAddress);
             
-            const txn = await optInAsset(sAddr, claimAssetId);
+            const txn = await optInAsset(sAddr, Number(claimAssetId));
 
             toast.loading("Sign Opt-in Transaction...", { id: "claim" });
             const singleTxnGroups = [{ txn: txn, signers: [sAddr] }];
@@ -124,7 +133,7 @@ export default function DashboardPage() {
             setClaimAssetId('');
             // Reload assets to show the new one with 0 balance
             loadAssets();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast.error("Opt-in failed: " + (error?.message || "Ensure you are connected"), { id: "claim" });
         } finally {
@@ -133,7 +142,8 @@ export default function DashboardPage() {
     };
 
     // RBAC Check
-    if (session?.user?.role !== "STUDENT") {
+    const user = session?.user as any;
+    if (user?.role !== "STUDENT") {
         return (
             <div className="min-h-[80vh] flex flex-col items-center justify-center p-8 text-center">
                 <Search size={64} className="text-red-500 mb-6 animate-pulse" />
@@ -146,7 +156,7 @@ export default function DashboardPage() {
         );
     }
 
-    const isAddressMismatch = session?.user?.address && accountAddress && session.user.address !== accountAddress;
+    const isAddressMismatch = user?.address && accountAddress && user.address !== accountAddress;
 
     return (
         <main className="min-h-screen bg-background p-4 lg:p-12 relative overflow-hidden">
@@ -206,7 +216,7 @@ export default function DashboardPage() {
                                         <h4 className="text-white font-bold text-lg tracking-tight uppercase">Security Mismatch</h4>
                                         <p className="text-red-400/80 text-sm font-medium">
                                             Current: <span className="font-mono text-white underline">{accountAddress.slice(0, 6)}...{accountAddress.slice(-6)}</span>. 
-                                            Expected: <span className="font-mono text-white underline">{session.user.address.slice(0, 6)}...{session.user.address.slice(-6)}</span>.
+                                            Expected: <span className="font-mono text-white underline">{user.address.slice(0, 6)}...{user.address.slice(-6)}</span>.
                                         </p>
                                     </div>
                                 </div>
@@ -273,9 +283,9 @@ export default function DashboardPage() {
                                             transition={{ delay: idx * 0.1 }}
                                         >
                                             <CertificateCard 
-                                                asset={asset} 
-                                                onGenerateProof={handleOpenProofModal} 
-                                                onShareBadge={handleOpenShareBadge}
+                                                asset={asset as any} 
+                                                onGenerateProof={() => handleOpenProofModal(asset)} 
+                                                onShareBadge={() => handleOpenShareBadge(asset)}
                                             />
                                         </motion.div>
                                     ))

@@ -2,6 +2,21 @@
 
 VeriDegree is a decentralized, privacy-preserving academic credential verification ecosystem. It leverages the Algorand blockchain to issue tamper-proof Soulbound Tokens (SBTs) representing degrees, IPFS for decentralized metadata storage, and Zero-Knowledge Proofs (zk-SNARKs) to allow students to prove their qualifications without revealing sensitive data like exact grades or CGPA.
 
+## 📂 Project Structure
+
+```text
+veridegree/
+├── src/
+│   ├── app/                # Next.js App Router Pages & API Routes
+│   │   └── api/            # Server-side logic (SBT Minting, AI Sanitization)
+│   ├── components/         # Reusable UI components (Framer Motion)
+│   ├── circuits/           # Circom ZK-SNARK source files
+│   ├── lib/                # Shared utilities (Algorand, IPFS, Wallet)
+│   └── styles/             # Global CSS & Tailwind configuration
+├── public/                 # Static assets & compiled ZK artifacts (.wasm, .zkey)
+└── tailwind.config.ts      # UI Design System tokens
+```
+
 ## 🌟 Key Features
 
 - **Cyber-Gold Premium UI:** A stunning, multi-million dollar aesthetic featuring glassmorphism, deep dark/gold gradients, and smooth micro-interactions powered by Framer Motion.
@@ -64,6 +79,9 @@ VeriDegree is a decentralized, privacy-preserving academic credential verificati
 
     GEMINI_API_KEY=your_google_ai_studio_api_key
     ```
+
+    > [!IMPORTANT]
+    > **Gemini Model Info**: The project is optimized to use `gemini-flash-latest` (Gemini 2.0 Flash Lite/Latest) for the BlindHire AI feature. If you encounter `429 Too Many Requests` or `404 Not Found` errors, ensure your API key has available quota for this specific model in [Google AI Studio](https://aistudio.google.com/).
 
 4.  **Run the development server:**
 

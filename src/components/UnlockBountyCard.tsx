@@ -6,11 +6,16 @@ import { useWallet } from '@/lib/WalletContext';
 import { executeTalentBounty } from '@/lib/algorand';
 import toast from 'react-hot-toast';
 
-export default function UnlockBountyCard({ studentAddress, universityAddress }) {
-    const { accountAddress, deflyWallet, connect } = useWallet();
+interface UnlockBountyCardProps {
+    studentAddress: string;
+    universityAddress: string;
+}
+
+export default function UnlockBountyCard({ studentAddress, universityAddress }: UnlockBountyCardProps) {
+    const { accountAddress, deflyWallet, connect } = useWallet() as any;
     const [isUnlocking, setIsUnlocking] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
-    const [txId, setTxId] = useState(null);
+    const [txId, setTxId] = useState<string | null>(null);
 
     const handleUnlock = async () => {
         let currentAddress = accountAddress;
@@ -35,7 +40,7 @@ export default function UnlockBountyCard({ studentAddress, universityAddress }) 
             setTxId(confirmedTxId);
             setIsUnlocked(true);
             toast.success("Bounty Paid. Profile Unlocked!", { id: "bounty" });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Bounty Error:", error);
             toast.error(error.message || "Failed to execute bounty transfer.", { id: "bounty" });
         } finally {
@@ -113,6 +118,7 @@ export default function UnlockBountyCard({ studentAddress, universityAddress }) 
                             </div>
                             <div>
                                 <h5 className="text-lg font-black text-white uppercase tracking-tight">Contact Information Unlocked</h5>
+                                {txId && (
                                 <a 
                                     href={`https://testnet.algoexplorer.io/tx/${txId}`} 
                                     target="_blank" 
@@ -121,6 +127,7 @@ export default function UnlockBountyCard({ studentAddress, universityAddress }) 
                                 >
                                     Transaction Verified: {txId.slice(0,12)}...
                                 </a>
+                                )}
                             </div>
                         </div>
 

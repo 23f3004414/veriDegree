@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { GraduationCap, ShieldCheck, Mail, Lock, Wallet, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
@@ -9,13 +9,13 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
-    const [isLoading, setIsLoading] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const { accountAddress, connect } = useWallet();
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const { accountAddress, connect } = useWallet() as any;
     const router = useRouter();
 
-    const handleUniversityLogin = async (e) => {
+    const handleUniversityLogin = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
         try {

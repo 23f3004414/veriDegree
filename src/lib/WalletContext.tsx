@@ -4,14 +4,14 @@ import { DeflyWalletConnect } from "@blockshake/defly-connect";
 import toast from 'react-hot-toast';
 import { cleanAddress } from './algorand';
 
-const WalletContext = createContext();
+const WalletContext = createContext<any>(null);
 const deflyWallet = new DeflyWalletConnect();
 
-export function WalletProvider({ children }) {
-    const [accountAddress, setAccountAddress] = useState(null);
+export function WalletProvider({ children }: { children: React.ReactNode }) {
+    const [accountAddress, setAccountAddress] = useState<string | null>(null);
 
     useEffect(() => {
-        deflyWallet.reconnectSession().then((accounts) => {
+        deflyWallet.reconnectSession().then((accounts: string[]) => {
             if (accounts.length) {
                 setAccountAddress(cleanAddress(accounts[0]));
             }
@@ -28,6 +28,7 @@ export function WalletProvider({ children }) {
         } catch (error) {
             console.error(error);
             toast.error("Connection Failed");
+            return null;
         }
     };
 

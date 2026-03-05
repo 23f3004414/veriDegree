@@ -4,7 +4,7 @@ import { useWallet } from '@/lib/WalletContext';
 import { Wallet, LogOut } from 'lucide-react';
 
 export default function WalletConnect() {
-    const { accountAddress, connect, disconnect } = useWallet();
+    const { accountAddress, connect, disconnect } = useWallet() as any;
 
     return (
         <div className="flex items-center gap-4">

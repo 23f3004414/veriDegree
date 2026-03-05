@@ -1,38 +1,40 @@
 "use client";
 import React, { useState } from 'react';
-import { generateCGPAProof } from '@/lib/zkEngine';
+import { generateNativeDisclosure } from '@/lib/nativeVerify';
 import { ShieldCheck, Download, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useWallet } from '@/lib/WalletContext';
 
-export default function ZKProofModal({ isOpen, onClose, asset }) {
-    const [threshold, setThreshold] = useState(8.0);
-    const [isGenerating, setIsGenerating] = useState(false);
+interface Asset {
+    id: string | number;
+    creator?: string;
+}
 
-    if (!isOpen) return null;
+interface ZKProofModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    asset: Asset | null;
+}
+
+export default function ZKProofModal({ isOpen, onClose, asset }: ZKProofModalProps) {
+    const [threshold, setThreshold] = useState<number>(8.0);
+    const [isGenerating, setIsGenerating] = useState<boolean>(false);
+    const { accountAddress } = useWallet() as { accountAddress: string };
+
+    if (!isOpen || !asset) return null;
 
     const handleGenerate = async () => {
+        if (!accountAddress) {
+            toast.error("Please connect your wallet first", { id: "zk-gen" });
+            return;
+        }
+
         setIsGenerating(true);
         try {
-            toast.loading("Computing ZK-Proof...", { id: "zk-gen" });
+            toast.loading("Generating Native Verification...", { id: "zk-gen" });
             
-            // In a real app, the CGPA would be fetched from the asset metadata on IPFS
-            // For this demo, we'll assume the CGPA is 9.5 (or parse it from the asset name/url)
-            // Ideally, we'd fetch the IPFS content here.
+            const proofData = await generateNativeDisclosure(accountAddress, Number(asset.id), threshold);
             
-            // Simulate fetching actual CGPA from IPFS (metadata)
-            const actualCGPA = 9.5; // This should come from the asset's metadata
-            
-            const { proof, publicSignals } = await generateCGPAProof(actualCGPA, threshold);
-            
-            const proofData = {
-                proof,
-                publicSignals,
-                assetId: asset.id,
-                threshold: threshold,
-                institution: asset.creator,
-                timestamp: new Date().toISOString()
-            };
-
             const element = document.createElement("a");
             const file = new Blob([JSON.stringify(proofData, null, 2)], {type: 'application/json'});
             element.href = URL.createObjectURL(file);
@@ -40,9 +42,9 @@ export default function ZKProofModal({ isOpen, onClose, asset }) {
             document.body.appendChild(element);
             element.click();
             
-            toast.success("ZK-Proof Generated and Downloaded!", { id: "zk-gen" });
+            toast.success("Native Proof Generated and Downloaded!", { id: "zk-gen" });
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast.error("Generation failed: " + error.message, { id: "zk-gen" });
         } finally {
@@ -63,9 +65,9 @@ export default function ZKProofModal({ isOpen, onClose, asset }) {
                     <div className="w-16 h-16 bg-gold/10 rounded-2xl flex items-center justify-center text-gold mb-4">
                         <ShieldCheck size={32} />
                     </div>
-                    <h2 className="text-2xl font-bold text-white">Generate ZK-Proof</h2>
+                    <h2 className="text-2xl font-bold text-white">Generate Native Proof</h2>
                     <p className="text-gray-400 mt-2 text-sm italic">
-                        Prove your CGPA is above a threshold without revealing the exact number.
+                        Prove your CGPA is above a threshold natively on Algorand.
                     </p>
                 </div>
 
@@ -85,7 +87,7 @@ export default function ZKProofModal({ isOpen, onClose, asset }) {
                     </div>
 
                     <div className="bg-gold/5 p-4 rounded-xl border border-gold/10 text-xs text-gray-400 leading-relaxed">
-                        <p><strong>Note:</strong> The proof will only be valid if your actual CGPA (stored in the Soulbound Token metadata) is greater than or equal to the selected threshold.</p>
+                        <p><strong>Note:</strong> Verification relies strictly on Algorand Native ASA metadata. Third-party ZK circuits have been upgraded to Protocol-native stateless assertions.</p>
                     </div>
 
                     <button 

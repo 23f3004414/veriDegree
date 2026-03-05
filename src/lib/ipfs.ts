@@ -7,7 +7,7 @@ const PINATA_SECRET_API_KEY = process.env.NEXT_PUBLIC_PINATA_SECRET_API_KEY;
  * Upload JSON metadata to IPFS via Pinata
  * @param {object} metadata 
  */
-export async function uploadJSONToIPFS(metadata) {
+export async function uploadJSONToIPFS(metadata: any) {
     const url = `https://api.pinata.cloud/pinning/pinJSONToIPFS`;
     
     try {
@@ -28,7 +28,7 @@ export async function uploadJSONToIPFS(metadata) {
  * Upload Image/File to IPFS via Pinata
  * @param {File} file 
  */
-export async function uploadFileToIPFS(file) {
+export async function uploadFileToIPFS(file: File) {
     const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
     
     let data = new FormData();
@@ -37,7 +37,7 @@ export async function uploadFileToIPFS(file) {
     try {
         const response = await axios.post(url, data, {
             headers: {
-                'Content-Type': `multipart/form-data; boundary=${data._boundary}`,
+                'Content-Type': `multipart/form-data; boundary=${(data as any)._boundary || ''}`,
                 pinata_api_key: PINATA_API_KEY,
                 pinata_secret_api_key: PINATA_SECRET_API_KEY,
             }

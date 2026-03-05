@@ -15,7 +15,7 @@ export const indexerClient = new algosdk.Indexer(INDEXER_TOKEN, INDEXER_SERVER, 
 /**
  * Clean and validate an Algorand address
  */
-export function cleanAddress(addr) {
+export function cleanAddress(addr: string | null | undefined): string | null {
     if (!addr) return null;
     const cleaned = String(addr).replace(/\s/g, "").trim();
     const isValid = algosdk.isValidAddress(cleaned);
@@ -26,7 +26,7 @@ export function cleanAddress(addr) {
 /**
  * Mint a Soulbound Token (ASA)
  */
-export async function mintSBT(creatorAddr, studentAddr, assetName, assetUrl) {
+export async function mintSBT(creatorAddr: string, studentAddr: string, assetName: string, assetUrl: string) {
     const cAddr = cleanAddress(creatorAddr);
     const sAddr = cleanAddress(studentAddr);
 
@@ -57,8 +57,8 @@ export async function mintSBT(creatorAddr, studentAddr, assetName, assetUrl) {
             assetName: String(assetName),
             unitName: "VDGR",
             assetURL: String(assetUrl),
-            note: undefined,
-            assetMetadataHash: undefined,
+            note: new Uint8Array(),
+            assetMetadataHash: new Uint8Array(),
             rekeyTo: undefined
         });
 
@@ -69,7 +69,7 @@ export async function mintSBT(creatorAddr, studentAddr, assetName, assetUrl) {
     }
 }
 
-export async function optInAsset(userAddr, assetIndex) {
+export async function optInAsset(userAddr: string, assetIndex: number | string | bigint) {
     const addr = cleanAddress(userAddr);
     if (!addr) throw new Error("Invalid user address");
     
@@ -78,15 +78,15 @@ export async function optInAsset(userAddr, assetIndex) {
         sender: addr,
         receiver: addr,
         assetIndex: Number(assetIndex),
-        amount: 0,
+        amount: 0n,
         suggestedParams: params,
-        note: undefined,
+        note: new Uint8Array(),
         rekeyTo: undefined
     });
     return txn;
 }
 
-export async function transferAsset(creatorAddr, studentAddr, assetIndex) {
+export async function transferAsset(creatorAddr: string, studentAddr: string, assetIndex: number | string | bigint) {
     const cAddr = cleanAddress(creatorAddr);
     const sAddr = cleanAddress(studentAddr);
     if (!cAddr || !sAddr) throw new Error("Invalid address provided for transfer");
@@ -100,19 +100,19 @@ export async function transferAsset(creatorAddr, studentAddr, assetIndex) {
         assetIndex: Number(assetIndex),
         amount: 1n, // Transfer 1 unit of the SBT
         suggestedParams: params,
-        note: undefined,
+        note: new Uint8Array(),
         rekeyTo: undefined
     });
     return txn;
 }
 
-export async function fetchUserAssets(address) {
+export async function fetchUserAssets(address: string) {
     const addr = cleanAddress(address);
     if (!addr) return [];
     try {
         const response = await indexerClient.lookupAccountAssets(addr).do();
         // v3 migration: convert BigInt fields to Number for JSON serialization in the UI
-        return (response.assets || []).map(asset => ({
+        return (response.assets || []).map((asset: any) => ({
             ...asset,
             assetId: Number(asset.assetId),
             amount: Number(asset.amount),
@@ -125,9 +125,9 @@ export async function fetchUserAssets(address) {
     }
 }
 
-export async function fetchAssetDetails(assetIndex) {
+export async function fetchAssetDetails(assetIndex: number | string | bigint) {
     try {
-        const response = await algodClient.getAssetByID(assetIndex).do();
+        const response = await algodClient.getAssetByID(Number(assetIndex)).do();
         // In algosdk v3, the response contains `index` and `params` directly at the top level
         return response;
     } catch (e) {
@@ -136,7 +136,7 @@ export async function fetchAssetDetails(assetIndex) {
     }
 }
 
-export const executeTalentBounty = async (senderAddress, studentAddress, universityAddress, signTransactionProvider) => {
+export const executeTalentBounty = async (senderAddress: string, studentAddress: string, universityAddress: string, signTransactionProvider: any) => {
     const sAddr = cleanAddress(senderAddress);
     const stAddr = cleanAddress(studentAddress);
     const uAddr = cleanAddress(universityAddress);

@@ -189,7 +189,7 @@ class WitnessCalculator {
 
     async calculateBinWitness(input, sanityCheck) {
 
-        const buff32 = new Uint32Array(this.witnessSize*this.n32);
+        const buff32 = new Uint32Array(this.wit756335029nessSize*this.n32);
 	const buff = new  Uint8Array( buff32.buffer);
         await this._doCalculateWitness(input, sanityCheck);
 

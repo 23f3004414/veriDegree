@@ -2,7 +2,20 @@
 import React from 'react';
 import { GraduationCap, ShieldCheck, ChevronRight } from 'lucide-react';
 
-export default function CertificateCard({ asset, onGenerateProof, onShareBadge }) {
+interface Asset {
+    id: string | number;
+    name?: string;
+    url?: string;
+    creator?: string;
+}
+
+interface CertificateCardProps {
+    asset: Asset;
+    onGenerateProof: (asset: Asset) => void;
+    onShareBadge: (asset: Asset) => void;
+}
+
+export default function CertificateCard({ asset, onGenerateProof, onShareBadge }: CertificateCardProps) {
     return (
         <div className="bg-card border border-gold/20 p-6 rounded-2xl hover:border-gold/50 transition-all group relative overflow-hidden">
             <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
@@ -42,6 +55,7 @@ export default function CertificateCard({ asset, onGenerateProof, onShareBadge }
                     <a 
                         href={`https://testnet.algoexplorer.io/asset/${asset.id}`}
                         target="_blank"
+                        rel="noopener noreferrer"
                         className="flex-1 bg-white/5 hover:bg-white/10 text-white/50 text-[10px] uppercase font-bold tracking-tighter py-2 rounded-lg border border-white/10 transition-all flex items-center justify-center gap-1"
                     >
                         Explorer <ChevronRight size={10} />

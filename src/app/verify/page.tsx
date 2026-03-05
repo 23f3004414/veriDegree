@@ -3,22 +3,35 @@ import React, { useState } from 'react';
 import { fetchAssetDetails, indexerClient } from '@/lib/algorand';
 import { Search, ShieldCheck, BadgeCheck, FileUp, Loader2, XCircle, Camera, X, Check, ArrowRight, Zap, GraduationCap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { verifyCGPAProof } from '@/lib/zkEngine';
+import { verifyNativeDisclosure } from '@/lib/nativeVerify';
 import { Html5Qrcode } from 'html5-qrcode';
 import { motion, AnimatePresence } from 'framer-motion';
 import UnlockBountyCard from '@/components/UnlockBountyCard';
 
-export default function VerifyPage() {
-    const [assetId, setAssetId] = useState('');
-    const [assetData, setAssetData] = useState(null);
-    const [isSearching, setIsSearching] = useState(false);
-    const [zkFile, setZkFile] = useState(null);
-    const [isVerifyingZk, setIsVerifyingZk] = useState(false);
-    const [zkResult, setZkResult] = useState(null);
-    const [isScannerOpen, setIsScannerOpen] = useState(false);
-    const [scannerInstance, setScannerInstance] = useState(null);
+interface AssetData {
+    id: string;
+    holder: string;
+    name?: string;
+    creator?: string;
+    [key: string]: any;
+}
 
-    const handleSearch = async (passedId) => {
+interface ZkResult {
+    success: boolean;
+    message: string;
+}
+
+export default function VerifyPage() {
+    const [assetId, setAssetId] = useState<string>('');
+    const [assetData, setAssetData] = useState<AssetData | null>(null);
+    const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [zkFile, setZkFile] = useState<File | null>(null);
+    const [isVerifyingZk, setIsVerifyingZk] = useState<boolean>(false);
+    const [zkResult, setZkResult] = useState<ZkResult | null>(null);
+    const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
+    const [scannerInstance, setScannerInstance] = useState<Html5Qrcode | null>(null);
+
+    const handleSearch = async (passedId?: string) => {
         const idToSearch = passedId || assetId;
         if (!idToSearch) return;
         
@@ -26,11 +39,11 @@ export default function VerifyPage() {
         setAssetData(null);
         setZkResult(null);
         try {
-            const details = await fetchAssetDetails(idToSearch);
+            const details = await fetchAssetDetails(Number(idToSearch));
             if (!details || !details.params) throw new Error("Asset not found");
             
-            const holders = await indexerClient.lookupAssetBalances(idToSearch).do();
-            const holder = holders.balances.find(b => BigInt(b.amount) > 0n);
+            const holders = await indexerClient.lookupAssetBalances(Number(idToSearch)).do();
+            const holder = holders.balances.find((b: any) => BigInt(b.amount) > 0n);
 
             setAssetData({
                 ...details.params,
@@ -38,8 +51,8 @@ export default function VerifyPage() {
                 holder: holder ? holder.address : 'Burned/None'
             });
             toast.success("Asset details fetched!");
-        } catch (error) {
-            toast.error(error.message);
+        } catch (error: any) {
+            toast.error(error?.message || "Error fetching asset details");
         } finally {
             setIsSearching(false);
         }
@@ -59,7 +72,7 @@ export default function VerifyPage() {
                         fps: 10,
                         qrbox: { width: 250, height: 250 },
                     },
-                    (decodedText) => {
+                    (decodedText: string) => {
                         console.log("QR Decoded:", decodedText);
                         try {
                             const url = new URL(decodedText);
@@ -76,7 +89,7 @@ export default function VerifyPage() {
                             toast.error("Invalid QR Code");
                         }
                     },
-                    (errorMessage) => {
+                    (_errorMessage: string) => {
                         // Suppress scanning errors to avoid noise
                     }
                 );
@@ -88,7 +101,7 @@ export default function VerifyPage() {
         }, 100);
     };
 
-    const stopScanner = async (instance = scannerInstance) => {
+    const stopScanner = async (instance: Html5Qrcode | null = scannerInstance) => {
         if (instance && instance.isScanning) {
             await instance.stop();
         }
@@ -102,22 +115,25 @@ export default function VerifyPage() {
         setIsVerifyingZk(true);
         try {
             const reader = new FileReader();
-            reader.onload = async (e) => {
+            reader.onload = async (e: ProgressEvent<FileReader>) => {
                 try {
-                    const proofObj = JSON.parse(e.target.result);
+                    const result = e.target?.result;
+                    if (typeof result !== 'string') throw new Error("Invalid file content");
                     
-                    toast.loading("Verifying Cryptographic Proof...", { id: "zk-v" });
+                    const proofObj = JSON.parse(result);
                     
-                    const isValid = await verifyCGPAProof(proofObj.proof, proofObj.publicSignals);
+                    toast.loading("Verifying Native Proof...", { id: "zk-v" });
                     
-                    if (isValid && proofObj.publicSignals[0] === "1") {
+                    const isValid = await verifyNativeDisclosure(proofObj);
+                    
+                    if (isValid) {
                         setZkResult({ success: true, message: `Valid Proof: CGPA is ≥ ${proofObj.threshold || '8.0'}` });
-                        toast.success("ZK-Proof Verified!", { id: "zk-v" });
+                        toast.success("Native Proof Verified!", { id: "zk-v" });
                     } else {
                         setZkResult({ success: false, message: "Invalid Proof or criteria not met" });
                         toast.error("Proof Verification Failed", { id: "zk-v" });
                     }
-                } catch (err) {
+                } catch (err: any) {
                     toast.error("Invalid proof file format", { id: "zk-v" });
                 } finally {
                     setIsVerifyingZk(false);
@@ -230,15 +246,15 @@ export default function VerifyPage() {
 
                                         <div className="grid grid-cols-1 gap-4">
                                             {[
-                                                { label: "Asset Name", value: assetData.name, mono: false },
-                                                { label: "Issuing Entity", value: assetData.creator, mono: true },
+                                                { label: "Asset Name", value: assetData.name || 'Unknown', mono: false },
+                                                { label: "Issuing Entity", value: assetData.creator || 'Unknown', mono: true },
                                                 { label: "Registered Holder", value: assetData.holder, mono: true },
                                                 { label: "Network State", value: "FINALIZED", mono: false }
                                             ].map((item, i) => (
                                                 <div key={i} className="flex justify-between items-center p-4 bg-white/5 rounded-2xl border border-white/5">
                                                     <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{item.label}</span>
                                                     <span className={`text-sm ${item.mono ? 'font-mono text-gold/70 text-[11px]' : 'font-bold text-white'}`}>
-                                                        {item.mono ? `${item.value.slice(0, 12)}...${item.value.slice(-8)}` : item.value}
+                                                        {item.mono && item.value.length > 20 ? `${item.value.slice(0, 12)}...${item.value.slice(-8)}` : item.value}
                                                     </span>
                                                 </div>
                                             ))}
@@ -252,10 +268,10 @@ export default function VerifyPage() {
                                             <div className="p-3 bg-gold/10 rounded-xl">
                                                 <GraduationCap size={24} className="text-gold" />
                                             </div>
-                                            <h4 className="text-lg font-black text-white uppercase tracking-tight">ZK Synthesis</h4>
+                                            <h4 className="text-lg font-black text-white uppercase tracking-tight">Native Disclosure</h4>
                                         </div>
                                         <p className="text-sm text-gray-400 font-medium mb-8 leading-relaxed">
-                                            Verify specific disclosure claims (e.g., CGPA thresholds) without revealing underlying data.
+                                            Verify specific disclosure claims (e.g., CGPA thresholds) strictly via Algorand metadata.
                                         </p>
                                         
                                         <div className="space-y-4">
@@ -263,7 +279,7 @@ export default function VerifyPage() {
                                                 <input 
                                                     type="file" 
                                                     id="zk-upload"
-                                                    onChange={e => setZkFile(e.target.files[0])}
+                                                    onChange={e => { if (e.target.files && e.target.files[0]) setZkFile(e.target.files[0]); }}
                                                     className="hidden"
                                                 />
                                                 <label 
@@ -300,7 +316,7 @@ export default function VerifyPage() {
                                                 )}
                                             </AnimatePresence>
                                             
-                                            {/* Render Talent Bounty Card ONLY if ZK Proof is successfully verified */}
+                                            {/* Render Talent Bounty Card ONLY if Proof is successfully verified */}
                                             {zkResult?.success && assetData?.holder && assetData?.creator && (
                                                 <UnlockBountyCard studentAddress={assetData.holder} universityAddress={assetData.creator} />
                                             )}
@@ -309,9 +325,9 @@ export default function VerifyPage() {
 
                                     <div className="mt-8 pt-6 border-t border-white/5">
                                         <div className="flex items-center justify-center gap-4 grayscale opacity-30">
-                                            <span className="text-[8px] font-black tracking-widest uppercase">Circom-v2</span>
-                                            <span className="text-[8px] font-black tracking-widest uppercase">Groth16</span>
-                                            <span className="text-[8px] font-black tracking-widest uppercase">WebAssembly</span>
+                                            <span className="text-[8px] font-black tracking-widest uppercase">Algorand Standard Asset</span>
+                                            <span className="text-[8px] font-black tracking-widest uppercase">Stateless Assertion</span>
+                                            <span className="text-[8px] font-black tracking-widest uppercase">On-Chain Resolution</span>
                                         </div>
                                     </div>
                                 </div>

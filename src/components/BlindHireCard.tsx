@@ -6,14 +6,26 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useWallet } from '@/lib/WalletContext';
 import toast from 'react-hot-toast';
 
+interface ProfileProject {
+    name: string;
+    description: string;
+}
+
+interface SanitizedProfile {
+    title: string;
+    skills: string[];
+    experience: string;
+    projects: ProfileProject[];
+}
+
 export default function BlindHireCard() {
-    const { accountAddress } = useWallet();
+    const { accountAddress } = useWallet() as any;
     const [resumeText, setResumeText] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
-    const [sanitizedProfile, setSanitizedProfile] = useState(null);
+    const [sanitizedProfile, setSanitizedProfile] = useState<SanitizedProfile | null>(null);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-    const copyToClipboard = (text) => {
+    const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
         toast.success("Link copied to clipboard!");
     };
@@ -35,9 +47,9 @@ export default function BlindHireCard() {
                 throw new Error(errMsg);
             }
             
-            setSanitizedProfile(data);
+            setSanitizedProfile(data as SanitizedProfile);
             toast.success("AI Sanitization Complete!");
-        } catch (error) {
+        } catch (error: any) {
             toast.error(error.message);
             console.error("BlindHire Error:", error);
         } finally {
